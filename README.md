@@ -30,9 +30,9 @@ An event-driven, clockless 5-stage RISC-V processor implemented in pure Verilog 
                         v                      v                      v                      v                      v
 [ PC / Imem ] ====> [ IF/ID Latch ] ========> [ ID/EX Latch ] ========> [ EX/MEM Latch ] ======> [ MEM/WB Latch ] ======> [ Register File ]
 
+---
 
-
-## 📚 Academic References & Prior Art
+## 📚 **Academic References & Prior Art**
 
 This implementation is informed by foundational literature in asynchronous hardware design, desynchronization methodology, and variable-latency arithmetic:
 
@@ -51,8 +51,8 @@ This implementation is informed by foundational literature in asynchronous hardw
 
 ---
 
-## 🚀 Upcoming Improvements (v2.0 Roadmap)
-
+## 🚀 **Upcoming Improvements (v2.0 Roadmap)
+**
 * **Data-Dependent Variable-Delay ALU:** Dynamic delay tap selection (Fast ~2ns, Medium ~5ns, Slow ~12ns) based on opcode and operand bit-width inspection.
 * **Xilinx Primitive Delay Mapping:** Mapping delay lines using explicit `LUT1`/`CARRY4` primitives with `DONT_TOUCH` synthesis attributes.
 * **Request Gating:** Selective suppression of `Req` signals at WB for non-register writing instructions (`SW`, `BEQ`).
