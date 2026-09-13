@@ -16,3 +16,16 @@ An event-driven, clockless 5-stage RISC-V processor implemented in pure Verilog 
 ---
 
 ## 🏗️ Architecture Overview
+
+```text
+                   +-------------------------------------------------------+
+                   |          ASYNCHRONOUS PIPELINE HANDSHAKING            |
+                   +-------------------------------------------------------+
+
+   [ req_in ] ---> [ IF Controller ] ---> [ ID Controller ] ---> [ EX Controller ] ---> [ MEM Controller ] ---> [ WB Controller ] ---> [ req_out ]
+                        |                      |                      |                      |                      |
+                        v                      v                      v                      v                      v
+                    le_if                  le_id                  le_ex                  le_mem                 le_wb
+                        |                      |                      |                      |                      |
+                        v                      v                      v                      v                      v
+[ PC / Imem ] ====> [ IF/ID Latch ] ========> [ ID/EX Latch ] ========> [ EX/MEM Latch ] ======> [ MEM/WB Latch ] ======> [ Register File ]
