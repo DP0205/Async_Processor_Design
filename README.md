@@ -30,7 +30,7 @@ An event-driven, clockless 5-stage RISC-V processor implemented in pure Verilog 
                         v                      v                      v                      v                      v
 [ PC / Imem ] ====> [ IF/ID Latch ] ========> [ ID/EX Latch ] ========> [ EX/MEM Latch ] ======> [ MEM/WB Latch ] ======> [ Register File ]
 
----
+```
 
 ## 📚 **Academic References & Prior Art**
 
