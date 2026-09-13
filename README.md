@@ -32,38 +32,28 @@ An event-driven, clockless 5-stage RISC-V processor implemented in pure Verilog 
 
 
 
-Academic References & Prior Art
+## 📚 Academic References & Prior Art
+
 This implementation is informed by foundational literature in asynchronous hardware design, desynchronization methodology, and variable-latency arithmetic:
 
-I. E. Sutherland, "Micropipelines," Communications of the ACM, vol. 32, no. 6, pp. 720–738, 1989.
+1. **I. E. Sutherland**, "Micropipelines," *Communications of the ACM*, vol. 32, no. 6, pp. 720–738, 1989.  
+   *(Introduced bundled-data asynchronous processing, Muller C-element controllers, and transparent latch pipelines.)*
+2. **J. Cortadella, A. Kondratyev, L. Lavagno, and C. Soteriou**, "Desynchronization: Synthesis of Asynchronous Circuits from Synchronous Specifications," *IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems*, 2006.  
+   *(Provides the theoretical methodology for converting synchronous RTL baselines to clockless handshake logic.)*
+3. **S. M. Nowick**, "Design of High-Performance Asynchronous Microprocessors," *PhD Dissertation, Stanford University*, 1993.  
+   *(Covers 4-phase handshake protocols, asynchronous scoreboarding, and hazard mitigation.)*
+4. **S. M. Nowick et al.**, "Variable-Latency Arithmetic Units for Asynchronous Datapaths," *IEEE Transactions on VLSI Systems*, 1997.  
+   *(Foundational theory for early-completion detection and data-dependent execution paths.)*
+5. **I. E. Sutherland and S. Cox**, "Data-Dependent Delay Lines for Asynchronous Circuits," *Asynch*, 1996.  
+   *(Pioneered dynamic delay tap selection based on operand inspection.)*
+6. **M. Tine et al.**, "Mapping Asynchronous Logic Architectures to Modern FPGAs," *FPL*, 2014.  
+   *(Implementation guidelines for LUT-based delay lines, primitive preservation (`DONT_TOUCH`), and routing on Xilinx PL architectures.)*
 
-(Introduced bundled-data asynchronous processing, Muller C-element controllers, and transparent latch pipelines.)
+---
 
-J. Cortadella, A. Kondratyev, L. Lavagno, and C. Soteriou, "Desynchronization: Synthesis of Asynchronous Circuits from Synchronous Specifications," IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems, 2006.
+## 🚀 Upcoming Improvements (v2.0 Roadmap)
 
-(Provides the theoretical methodology for converting synchronous RTL baselines to clockless handshake logic.)
-
-S. M. Nowick, "Design of High-Performance Asynchronous Microprocessors," PhD Dissertation, Stanford University, 1993.
-
-(Covers 4-phase handshake protocols, asynchronous scoreboarding, and hazard mitigation.)
-
-S. M. Nowick et al., "Variable-Latency Arithmetic Units for Asynchronous Datapaths," IEEE Transactions on VLSI Systems, 1997.
-
-(Foundational theory for early-completion detection and data-dependent execution paths.)
-
-I. E. Sutherland and S. Cox, "Data-Dependent Delay Lines for Asynchronous Circuits," Asynch, 1996.
-
-(Pioneered dynamic delay tap selection based on operand inspection.)
-
-M. Tine et al., "Mapping Asynchronous Logic Architectures to Modern FPGAs," FPL, 2014.
-
-(Implementation guidelines for LUT-based delay lines, primitive preservation (DONT_TOUCH), and routing on Xilinx PL architectures.)
-
-🚀 Upcoming Improvements (v2.0 Roadmap)
-Data-Dependent Variable-Delay ALU: Dynamic delay tap selection (Fast ~2ns, Medium ~5ns, Slow ~12ns) based on opcode and operand bit-width inspection.
-
-Xilinx Primitive Delay Mapping: Mapping delay lines using explicit LUT1/CARRY4 primitives with DONT_TOUCH synthesis attributes.
-
-Request Gating: Selective suppression of Req signals at WB for non-register writing instructions (SW, BEQ).
-
-ZedBoard FPGA Deployment: Vivado timing closure, ILA hardware debugging, and dynamic power comparison against a synchronous baseline core.
+* **Data-Dependent Variable-Delay ALU:** Dynamic delay tap selection (Fast ~2ns, Medium ~5ns, Slow ~12ns) based on opcode and operand bit-width inspection.
+* **Xilinx Primitive Delay Mapping:** Mapping delay lines using explicit `LUT1`/`CARRY4` primitives with `DONT_TOUCH` synthesis attributes.
+* **Request Gating:** Selective suppression of `Req` signals at WB for non-register writing instructions (`SW`, `BEQ`).
+* **ZedBoard FPGA Deployment:** Vivado timing closure, ILA hardware debugging, and dynamic power comparison against a synchronous baseline core.
