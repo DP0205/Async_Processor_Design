@@ -334,11 +334,10 @@ endmodule
 module riscv_core (
     input  wire reset,
     
-    // Asynchronous Handshake Interface (Replaces Global Clock)
-    input  wire req_in,       // Triggers the Instruction Fetch stage
-    output wire ack_out,      // Acknowledges the fetch request
-    output wire req_out,      // Signals Writeback completion
-    input  wire ack_in        // Acknowledges Writeback completion
+    input  wire req_in,       
+    output wire ack_out,      
+    output wire req_out,      
+    input  wire ack_in        
 );
 
     // ============================================================
@@ -362,7 +361,7 @@ module riscv_core (
     wire [31:0] wb_write_data;
 
     // ============================================================
-    // MULLER C-ELEMENT HANDSHAKE CONTROLLERS
+    // MULLER C-ELEMENT HANDSHAKE CONTROLLERS (v2.0 MODIFIED)
     // ============================================================
     wire req_if_id,  ack_id_if,  le_if;
     wire req_id_ex,  ack_ex_id,  le_id;
@@ -370,7 +369,6 @@ module riscv_core (
     wire req_mem_wb, ack_wb_mem, le_mem;
     wire le_wb;
 
-    // Asynchronous Scoreboarding: Gate IF's Ack if Hazard Unit stalls
     wire ack_id_if_gated = if_id_write ? ack_id_if : 1'b0;
 
     async_pipeline_controller ctrl_if (
@@ -383,8 +381,10 @@ module riscv_core (
         .req_out(req_id_ex), .ack_in(ack_ex_id), .latch_enable(le_id)
     );
 
+    // [V2.0 Addition]: req_alu_done comes from the variable delay line
+    wire req_alu_done; 
     async_pipeline_controller ctrl_ex (
-        .rst(reset), .req_in(req_id_ex), .ack_out(ack_ex_id),
+        .rst(reset), .req_in(req_alu_done), .ack_out(ack_ex_id),
         .req_out(req_ex_mem), .ack_in(ack_mem_ex), .latch_enable(le_ex)
     );
 
@@ -401,43 +401,22 @@ module riscv_core (
     // ============================================================
     // IF STAGE
     // ============================================================
-    wire [31:0] pc;
-    wire [31:0] next_pc;
-    wire [31:0] instruction;
+    wire [31:0] pc, next_pc, instruction;
     wire [31:0] pc_plus4 = pc + 32'd4;
 
     pc pc_unit (
-        .reset(reset),
-        .latch_enable(le_if),
-        .next_pc(next_pc),
-        .current_pc(pc)
+        .reset(reset), .latch_enable(le_if), .next_pc(next_pc), .current_pc(pc)
     );
-
-    instruction_memory imem (
-        .address(pc),
-        .instruction(instruction)
-    );
-
+    instruction_memory imem (.address(pc), .instruction(instruction));
+    
     assign branch_target = id_ex_pc + id_ex_immediate;
     assign next_pc       = branch_taken ? branch_target : pc_plus4;
 
-    // ============================================================
-    // IF/ID PIPELINE REGISTER (Asynchronous)
-    // ============================================================
-    wire [31:0] if_id_pc;
-    wire [31:0] if_id_pc_plus4;
-    wire [31:0] if_id_instruction;
-
+    wire [31:0] if_id_pc, if_id_pc_plus4, if_id_instruction;
     if_id if_id_reg (
-        .reset(reset),
-        .latch_enable(le_if),
-        .flush(branch_taken),
-        .pc_in(pc),
-        .pc_plus4_in(pc_plus4),
-        .instruction_in(instruction),
-        .pc_out(if_id_pc),
-        .pc_plus4_out(if_id_pc_plus4),
-        .instruction_out(if_id_instruction)
+        .reset(reset), .latch_enable(le_if), .flush(branch_taken),
+        .pc_in(pc), .pc_plus4_in(pc_plus4), .instruction_in(instruction),
+        .pc_out(if_id_pc), .pc_plus4_out(if_id_pc_plus4), .instruction_out(if_id_instruction)
     );
 
     // ============================================================
@@ -463,18 +442,12 @@ module riscv_core (
         .branch(id_branch), .alu_op(id_alu_op)
     );
 
-    immediate_generator imm_gen (
-        .instruction(if_id_instruction), .immediate(id_immediate)
-    );
-
-    alu_control alu_ctrl_unit (
-        .alu_op(id_alu_op), .funct3(id_funct3), .funct7(id_funct7), .alu_ctrl(id_alu_ctrl)
-    );
+    immediate_generator imm_gen (.instruction(if_id_instruction), .immediate(id_immediate));
+    alu_control alu_ctrl_unit (.alu_op(id_alu_op), .funct3(id_funct3), .funct7(id_funct7), .alu_ctrl(id_alu_ctrl));
 
     wire reg_write_pulse = le_wb & mem_wb_reg_write;
     register_file regs (
-        .reset(reset),
-        .write_enable(reg_write_pulse),
+        .reset(reset), .write_enable(reg_write_pulse),
         .rs1(id_rs1), .rs2(id_rs2), .rd(mem_wb_rd),
         .write_data(wb_write_data),
         .read_data1(id_rs1_data), .read_data2(id_rs2_data)
@@ -486,18 +459,13 @@ module riscv_core (
         .pc_write(pc_write), .if_id_write(if_id_write), .id_ex_flush(id_ex_flush)
     );
 
-    // ============================================================
-    // ID/EX PIPELINE REGISTER (Asynchronous)
-    // ============================================================
     wire        id_ex_reg_write, id_ex_mem_write, id_ex_mem_to_reg, id_ex_alu_src, id_ex_branch;
     wire [3:0]  id_ex_alu_ctrl;
     wire [31:0] id_ex_rs1_data, id_ex_rs2_data;
     wire [4:0]  id_ex_rs1, id_ex_rs2;
 
     id_ex id_ex_reg (
-        .reset(reset),
-        .latch_enable(le_id),
-        .flush(id_ex_flush || branch_taken),
+        .reset(reset), .latch_enable(le_id), .flush(id_ex_flush || branch_taken),
         .reg_write_in(id_reg_write), .mem_read_in(id_mem_read), .mem_write_in(id_mem_write),
         .mem_to_reg_in(id_mem_to_reg), .alu_src_in(id_alu_src), .branch_in(id_branch),
         .alu_ctrl_in(id_alu_ctrl), .pc_in(if_id_pc), .rs1_data_in(id_rs1_data),
@@ -511,7 +479,7 @@ module riscv_core (
     );
 
     // ============================================================
-    // EX STAGE
+    // EX STAGE (V2.0 VARIABLE LATENCY LOGIC INTEGRATED HERE)
     // ============================================================
     wire [1:0] forward_a, forward_b;
     wire [31:0] ex_forward_a, ex_forward_b, ex_alu_b, ex_alu_result;
@@ -544,15 +512,30 @@ module riscv_core (
         .branch(id_ex_branch), .zero(ex_zero), .branch_taken(branch_taken)
     );
 
-    // ============================================================
-    // EX/MEM PIPELINE REGISTER (Asynchronous)
-    // ============================================================
+    // [V2.0 Addition]: Inspect actual operands entering the ALU
+    wire [1:0] ex_delay_sel;
+    opcode_inspector inspector (
+        .branch(id_ex_branch),
+        .mem_read(id_ex_mem_read),
+        .mem_write(id_ex_mem_write),
+        .alu_ctrl(id_ex_alu_ctrl),
+        .operand_a(ex_forward_a), // Actual data entering ALU
+        .operand_b(ex_alu_b),     // Actual data entering ALU
+        .delay_sel(ex_delay_sel)
+    );
+
+    // [V2.0 Addition]: Delay the request token to match the ALU operation time
+    variable_delay_line vdl (
+        .req_in(req_id_ex),
+        .delay_sel(ex_delay_sel),
+        .req_out(req_alu_done)
+    );
+
     wire        ex_mem_mem_read, ex_mem_mem_write, ex_mem_mem_to_reg;
     wire [31:0] ex_mem_store_data;
 
     ex_mem ex_mem_reg (
-        .reset(reset),
-        .latch_enable(le_ex),
+        .reset(reset), .latch_enable(le_ex),
         .reg_write_in(id_ex_reg_write), .mem_read_in(id_ex_mem_read),
         .mem_write_in(id_ex_mem_write), .mem_to_reg_in(id_ex_mem_to_reg),
         .alu_result_in(ex_alu_result), .store_data_in(ex_forward_b), .rd_in(id_ex_rd),
@@ -562,38 +545,27 @@ module riscv_core (
     );
 
     // ============================================================
-    // MEM STAGE
+    // MEM & WB STAGES
     // ============================================================
     wire [31:0] mem_read_data;
     wire dmem_write_pulse = le_mem & ex_mem_mem_write;
 
     data_memory dmem (
-        .reset(reset),
-        .mem_read(ex_mem_mem_read),
-        .write_enable(dmem_write_pulse),
-        .address(ex_mem_alu_result),
-        .write_data(ex_mem_store_data),
-        .read_data(mem_read_data)
+        .reset(reset), .mem_read(ex_mem_mem_read), .write_enable(dmem_write_pulse),
+        .address(ex_mem_alu_result), .write_data(ex_mem_store_data), .read_data(mem_read_data)
     );
 
-    // ============================================================
-    // MEM/WB PIPELINE REGISTER (Asynchronous)
-    // ============================================================
     wire        mem_wb_mem_to_reg;
     wire [31:0] mem_wb_alu_result, mem_wb_mem_data;
 
     mem_wb mem_wb_reg (
-        .reset(reset),
-        .latch_enable(le_mem),
+        .reset(reset), .latch_enable(le_mem),
         .reg_write_in(ex_mem_reg_write), .mem_to_reg_in(ex_mem_mem_to_reg),
         .alu_result_in(ex_mem_alu_result), .mem_data_in(mem_read_data), .rd_in(ex_mem_rd),
         .reg_write_out(mem_wb_reg_write), .mem_to_reg_out(mem_wb_mem_to_reg),
         .alu_result_out(mem_wb_alu_result), .mem_data_out(mem_wb_mem_data), .rd_out(mem_wb_rd)
     );
 
-    // ============================================================
-    // WB STAGE
-    // ============================================================
     assign wb_write_data = mem_wb_mem_to_reg ? mem_wb_mem_data : mem_wb_alu_result;
 
 endmodule
